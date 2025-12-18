@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>性格類型診断テスト</title>
@@ -162,7 +163,13 @@
 </style>
 </head>
 <body>
-
+    <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+    <h2 style="color:#001f3f; margin-bottom:10px;">パスワード認証</h2>
+    <p style="margin-bottom:20px;">閲覧にはパスワードが必要です</p>
+    <input type="password" id="pass-input" placeholder="Password" style="padding:10px; font-size:16px; width:200px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
+    <button onclick="checkPass()" style="background:#001f3f; color:white; padding:10px 20px; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">入室する</button>
+    <p id="error-msg" style="color:red; font-size:14px; margin-top:10px; display:none;">パスワードが違います</p>
+</div>
 <div class="container">
     <div id="screen-start">
         <h1>性格類型診断テスト</h1>
@@ -203,6 +210,21 @@
 </div>
 
 <script>
+// ▼▼▼ パスワード処理（ここから） ▼▼▼
+    const SECRET_PASS = "warc"; // ★ここに好きなパスワードを入れる
+
+    function checkPass() {
+        const input = document.getElementById('pass-input').value;
+        if(input === SECRET_PASS) {
+            // 正解ならカバーを消す
+            document.getElementById('login-overlay').style.display = 'none';
+        } else {
+            // 不正解ならエラーを表示
+            document.getElementById('error-msg').style.display = 'block';
+        }
+    }
+    // ▲▲▲ パスワード処理（ここまで） ▲▲▲
+    
     // ==========================================
     // データ定義
     // ==========================================
