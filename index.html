@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>性格類型診断テスト</title>
+<style>
+    /* 仕様書: 黒、白、紺色などのシックな色で統一 
+       仕様書: スマホでも見やすい設計
+    */
+    :root {
+        --primary-color: #001f3f; /* 紺色 */
+        --accent-color: #39CCCC;
+        --bg-color: #ffffff;      /* 白 */
+        --text-color: #333333;    /* 黒に近いグレー */
+        --light-gray: #f4f4f4;
+    }
+
+    body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 600px; /* スマホで見やすい幅 */
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    h1 {
+        color: var(--primary-color);
+        text-align: center;
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+
+    p {
+        line-height: 1.6;
+    }
+
+    /* 質問表示エリア */
+    .question-card {
+        background-color: var(--light-gray);
+        padding: 40px 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 30px;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .q-text {
+        font-size: 20px;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .progress {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 15px;
+    }
+
+    /* ボタン類 */
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .btn {
+        border: none;
+        padding: 16px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: pointer;
+        color: white;
+        transition: opacity 0.2s;
+        width: 100%;
+        text-align: center;
+    }
+
+    .btn:active { opacity: 0.8; }
+
+    /* 仕様書[cite: 48-52]: 選択肢と配点に対応するボタンデザイン */
+    .btn-5 { background-color: #001f3f; } /* 紺 (完全に該当) */
+    .btn-4 { background-color: #003366; } /* 少し明るい紺 */
+    .btn-25 { background-color: #555555; } /* グレー (どちらでもない) */
+    .btn-2 { background-color: #777777; } /* 薄いグレー */
+    .btn-1 { background-color: #999999; } /* さらに薄いグレー */
+
+    .btn-start {
+        background-color: var(--primary-color);
+        font-size: 20px;
+        padding: 20px;
+        margin-top: 30px;
+    }
+
+    /* 結果画面 */
+    .result-section {
+        text-align: center;
+        display: none;
+    }
+
+    /* 仕様書[cite: 19]: 表記順序 1.類型 2.説明 */
+    .result-type-title {
+        font-size: 16px;
+        color: #666;
+        margin-top: 20px;
+    }
+
+    .type-display {
+        font-size: 64px;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin: 10px 0 30px 0;
+        border-bottom: 4px solid var(--primary-color);
+        display: inline-block;
+        padding-bottom: 5px;
+    }
+
+    .desc-box {
+        text-align: left;
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 50px; /* 誤タップ防止のため余白を確保 */
+    }
+
+    .desc-label {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .desc-text {
+        margin-top: 15px;
+        font-size: 16px;
+    }
+
+    /* 誤タップ防止用スペーサー */
+    .spacer {
+        height: 50px;
+    }
+
+    .hidden { display: none !important; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div id="screen-start">
+        <h1>性格類型診断テスト</h1>
+        <p style="text-align: center; color: #666;">全80問 / 所要時間 約5分</p>
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; font-size: 14px; margin-top: 20px;">
+            <p>直感に従って、最も近いと感じる選択肢を選んでください。<br>あまり深く考えすぎず、パッと答えるのがコツです。</p>
+        </div>
+        <button class="btn btn-start" onclick="startTest()">診断を開始する</button>
+    </div>
+
+    <div id="screen-question" class="hidden">
+        <div class="question-card">
+            <div class="progress" id="progress-text">Question 1 / 80</div>
+            <div class="q-text" id="question-text">質問読み込み中...</div>
+        </div>
+        
+        <div class="btn-group">
+            <button class="btn btn-5" onclick="answer(5.0)">完全に該当する</button>
+            <button class="btn btn-4" onclick="answer(4.0)">該当する</button>
+            <button class="btn btn-25" onclick="answer(2.5)">どちらでもない</button>
+            <button class="btn btn-2" onclick="answer(2.0)">あまり該当しない</button>
+            <button class="btn btn-1" onclick="answer(1.0)">該当しない</button>
+        </div>
+    </div>
+
+    <div id="screen-result" class="result-section">
+        <p class="result-type-title">あなたの性格類型</p>
+        <div id="result-type" class="type-display">--</div>
+        
+        <div class="desc-box">
+            <span class="desc-label">この性格類型の説明</span>
+            <div id="result-desc" class="desc-text">--</div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="btn btn-25" style="width: auto; padding: 10px 30px; margin: 0 auto;" onclick="location.reload()">もう一度診断する</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // データ定義
+    // ==========================================
+
+    // 仕様書[cite: 33, 35, 37, 39]: 各系統の質問リスト
+    const rawQuestions = [
+        // P型
+        {t:"P", q:"自分は明るい性格だと思う"}, {t:"P", q:"人生、頑張れば何とかなると思う"}, {t:"P", q:"嫌なことがあってもすぐに切り替えられる方だ"},
+        {t:"P", q:"選べる選択肢が多いと嬉しくなるタイプだ"}, {t:"P", q:"自分は強運な人間だと思う"}, {t:"P", q:"何事もシンプル・イズ・ベストだと思う"},
+        {t:"P", q:"難しい説明よりイメージや図で単純化して説明して欲しい"}, {t:"P", q:"うっかりミスをたまにやる"}, {t:"P", q:"無駄に複雑なもの、難解なものが苦手だ"},
+        {t:"P", q:"物事を理解する際は要点を理解するよう努める"}, {t:"P", q:"休みの日は基本的に外に出かけることが多い"}, {t:"P", q:"行動し続けていれば自然と上手くいく気がする"},
+        {t:"P", q:"チャンスを掴むためには迅速な行動こそが重要だと思う"}, {t:"P", q:"何事も動きながら考えた方が効率的だと思う"}, {t:"P", q:"いろいろと考えるよりとりあえず行動してみるタイプだ"},
+        {t:"P", q:"決断においてはノリが重要だと思う"}, {t:"P", q:"自分は直感的な方だと思う"}, {t:"P", q:"自分は感情表現が豊かな方だと思う"},
+        {t:"P", q:"物事を感覚的に判断しやすい方だと思う"}, {t:"P", q:"映画や漫画でよく泣く方だ"},
+        // A型
+        {t:"A", q:"自分は慎重な性格だと思う"}, {t:"A", q:"人生は計画や準備が何よりも重要だと思う"}, {t:"A", q:"失敗の原因をよく分析する方だ"},
+        {t:"A", q:"選択肢が複数ある場合はよく調べて比較する方だ"}, {t:"A", q:"何事もじっくりと計画的に進めていきたい"}, {t:"A", q:"何事も正確性にこだわる方だ"},
+        {t:"A", q:"過不足無く必要十分な情報を正確に伝えてほしい"}, {t:"A", q:"仕事においては細部までしっかり確かめる"}, {t:"A", q:"雑な仕事はしたくない"},
+        {t:"A", q:"物事を理解する際は細部まで理解するよう努める"}, {t:"A", q:"好きなことについては徹底的に勉強する"}, {t:"A", q:"新しい知識を得ることに喜びを感じる"},
+        {t:"A", q:"チャンスを掴むためには知識が重要だと思う"}, {t:"A", q:"何事も十分に調査して行動した方が効率的だと思う"}, {t:"A", q:"十分な知識をつけてから動きたいタイプだ"},
+        {t:"A", q:"発言する際は論理の流れに注意している"}, {t:"A", q:"自分は論理的な人間だと思う"}, {t:"A", q:"他人の説明の論理矛盾にすぐ気づくタイプだ"},
+        {t:"A", q:"理路整然とした文章を読むと感動する"}, {t:"A", q:"理屈っぽいとよくいわれる"},
+        // I型
+        {t:"I", q:"周りの人の意見に従うタイプだ"}, {t:"I", q:"決断力のある人のそばにいる方が安心する"}, {t:"I", q:"意見の対立が生まれたときは譲る方だ"},
+        {t:"I", q:"自分は協調性に優れていると思う"}, {t:"I", q:"自分の意見をいうのは得意ではない"}, {t:"I", q:"自分は優柔不断なタイプだと思う"},
+        {t:"I", q:"選択肢が複数ある場合は選ぶのに時間がかかる"}, {t:"I", q:"自分で決断したことでも、後で不安になることがある"}, {t:"I", q:"選択肢に迷ったときは、周りによく相談して決めるタイプだ"},
+        {t:"I", q:"断定的な回答をすることが苦手だ"}, {t:"I", q:"自分で意思決定するより、上司の決定に従う方を好む"}, {t:"I", q:"あまりリスクは取りたくない"},
+        {t:"I", q:"自分にできそうにないことは避けたい"}, {t:"I", q:"間違うことが怖いので発言を控えることがある"}, {t:"I", q:"無謀な挑戦よりも着実な一歩を好む"},
+        {t:"I", q:"一人でいるより誰かと一緒にいたいタイプだ"}, {t:"I", q:"大勢の中の一人でいる方が楽でいい"}, {t:"I", q:"一人で全責任を負うより、仲間と共同で背負っていきたい"},
+        {t:"I", q:"他人をサポートすることに喜びを感じる"}, {t:"I", q:"自分は縁の下の力持ちタイプだと思う"},
+        // D型
+        {t:"D", q:"日頃から判断の合理性を重視している"}, {t:"D", q:"非合理な判断に従うことは人生の損失だと思う"}, {t:"D", q:"機能的で無駄がない組織が好きだ"},
+        {t:"D", q:"メリットが少ない行動はしたくない"}, {t:"D", q:"貴重な時間を無駄にしたくないと感じることがよくある"}, {t:"D", q:"自分は即断即決なタイプだと思う"},
+        {t:"D", q:"選択肢で悩んでいる時間は無駄だと思う"}, {t:"D", q:"日頃から決断に長い時間をかけない"}, {t:"D", q:"せっかちだとよく言われる"},
+        {t:"D", q:"YES・NOをはっきり言うことが多い"}, {t:"D", q:"他人の決定に従うより、自分で意思決定して責任を負う方を好む"}, {t:"D", q:"リスクが高い選択肢の方が燃える"},
+        {t:"D", q:"この人生では大きな挑戦をし続けたいと思っている"}, {t:"D", q:"自分は大きなリスクでも積極的に取っていくタイプだ"}, {t:"D", q:"その他大勢とは違う行動、選択を常にしていたいと思う"},
+        {t:"D", q:"日頃から一人又は特定の人間のみと活動することが多い"}, {t:"D", q:"自分の能力向上を重視するタイプだ"}, {t:"D", q:"他人の遅いペースに合わせることが得意ではない"},
+        {t:"D", q:"他人にあまり関心がない"}, {t:"D", q:"チームで動くより、個人で動く方が向いていると思う"}
+    ];
+
+    // 仕様書: 診断結果の説明文
+    const resultsDesc = {
+        "PP": "明るく社交的で、楽天家。チーム内のムードメーカーになりやすい人材。長く落ち込まない類型で、最後はいつもポジティブシンキング。チームの中にいると周りまで明るくしてくれるタイプ。",
+        "PA": "明るく大胆な性格と正確かつ緻密な性格を併せ持つタイプ。基本的に社交的で、誰とでも打ち解けやすいが、自分の専門分野に関しては遊び無しで真剣に向き合う鍛冶職人のような気質を持っている。",
+        "PI": "一定の社交性と協調性があるので、組織の中で調整役として活躍することが多いタイプ。根は明るく前向きだが、心配性なところがある。最初は人見知りが入る傾向があるが、慣れてくると人懐っこい性格が表に出てくる。",
+        "PD": "思いついたことを次々に行動に移すため、営業職や事業家に多いタイプ。何かを思いついてから、行動に移すまでがかなり早く、頭の回転も早い。全体の２割くらいの知識しかなくても、ある程度のところまでできてしまうほど要領がいい器用な類型。",
+        "AP": "日頃は正確かつスピーディーな仕事をしてくれる頼れる執事のような気質で、一見するといつも冷静で真面目な性格に見えるが、打ち解けてくるとドンドン社交的になっていき、信頼できる仲間になっていくタイプ。",
+        "AA": "高い調査能力で情報を集めてくるため、一つの分野に絞って業務を任せると「歩くWikipedia」のような存在になる。勉強も得意で、好きな分野に関しては徹底的に知識を得ようとするヲタク気質がある。知的で冷静な人が多いため、知識面で頼りになる存在。",
+        "AI": "コツコツと正確に作業を積み重ねることに長けた人材。責任感が強い人が多いため、よく働いてくれる。自分の考えや価値観を言語化するのに時間がかかるため、じっくり考えて正確なことを言うタイプ。周りをよく観察しており、分析力もある。",
+        "AD": "高い分析力と合理性を併せ持っており、他人の間違いや矛盾点をすぐに見つけられるタイプ。このタイプにダブルチェックを依頼すると仕事の精度が高くなる。膨大なデータを類型化し、見やすくすることも得意。",
+        "IP": "日本人に多い類型で、何の事務をさせてもある程度でき、程よく社交性も持っているタイプ。周りによく気を配って生きており、争いを好まない傾向がある。責任感もある程度あるので、頑張りすぎてしまうことがある。数が多い類型であるため、細分化すると様々な人がいる。",
+        "IA": "指示されたことを正確にこなすため、事務員としての適性が高い。しかも、心配性な性格であるため、自分で調査し、適時に報告・連絡・相談をしてくれる。部下として優秀な類型であり、タスクを安心して任せることができる。ただし、頑張りすぎる傾向が強いため、タスクの抱え込み過ぎには注意が必要。",
+        "II": "根が優しい性格をしているため、動物や植物に関わる仕事に向いている。強い自我や個性を有さないタイプなので、ある程度自分で個性をコントロールでき、どのような組織にも溶け込むことができる特殊な類型である。周りをよく観察し、些細な変化にも敏感に気づくことができる。",
+        "ID": "思考の幅が広く深いため、様々な不安要素を洗い出すことができるタイプ。内心では様々なことを考慮し、慎重に決断をくだす類型であるが、外部には「決断力」のみを示すことが多い。決断した後も脳内で何度も思考し直し、間違いがないか確認する傾向が強く、失敗が少ない。",
+        "DI": "日頃は即断即決で行動し、人を引っ張っていく人材だが、一人になる時間ができると冷静に物事を分析し、過去の決断が正しかったかどうかを深く考えるタイプ。自問自答を繰り返す類型であるため、年齢と共に成熟度が増していきやすく、失敗をしなくなっていく。",
+        "DP": "強いリーダーシップ、高い合理性と行動力、さらには社交性まで併せ持っており、責任感も強い類型である。そのため、チームを率いる存在になることが多い。瞬時に物事を理解できる頭脳も持っていることが多いため、ある程度のことは何でもできてしまう。決断力も高いため、思いついてから行動するまでのスピードが異常に早い。",
+        "DA": "広い視野と高い分析力を有し、物事の仕組みやルールを創る側にまわることが多い類型。元々のポテンシャル（潜在能力）が高いため、周りから信頼されやすく、リーダーに選任されることが多い。年齢と共に専門性を身につけた場合、多くの人が経営層またはマネジメント層に入る。",
+        "DD": "即断即決即行動の最たる類型で、他人の意見に左右されない強い個性を持ったタイプ。目的達成に対する意欲が極めて強く、自分で決めた目標は達成することが多い。特定の分野に精通した場合、他の追随を許さないほどの専門家になりやすく、世界でも通用する人材になりやすい。"
+    };
+
+    // ==========================================
+    // アプリケーションの状態管理
+    // ==========================================
+    let scores = { P: 0, A: 0, I: 0, D: 0 };
+    let questionQueue = [];
+    let currentIndex = 0;
+    const totalQuestions = 80; // [cite: 7]
+
+    // 配列シャッフル関数 (Fisher-Yates)
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // 診断開始処理
+    function startTest() {
+        // スコア初期化
+        scores = { P: 0, A: 0, I: 0, D: 0 };
+        currentIndex = 0;
+
+        // 質問リストをコピーしてシャッフル [cite: 31]
+        questionQueue = shuffle([...rawQuestions]);
+
+        // 画面切り替え
+        document.getElementById('screen-start').classList.add('hidden');
+        document.getElementById('screen-question').classList.remove('hidden');
+        
+        renderQuestion();
+    }
+
+    // 質問表示処理
+    function renderQuestion() {
+        const q = questionQueue[currentIndex];
+        document.getElementById('progress-text').innerText = `Question ${currentIndex + 1} / ${totalQuestions}`;
+        document.getElementById('question-text').innerText = q.q;
+    }
+
+    // 回答処理
+    function answer(points) {
+        const currentQ = questionQueue[currentIndex];
+        const type = currentQ.t;
+
+        // 加点 [cite: 48-52]
+        scores[type] += points;
+
+        // 仕様書: 「どちらでもない」を選択した場合は、I型の点数に1点加える
+        if (points === 2.5) {
+            scores['I'] += 1.0;
+        }
+
+        currentIndex++;
+
+        if (currentIndex < totalQuestions) {
+            renderQuestion();
+        } else {
+            finishTest();
+        }
+    }
+
+    // 結果計算・表示処理
+    function finishTest() {
+        // 仕様書[cite: 54]: I型の数値が100点を超えた場合でもすべて「100点」として処理
+        if (scores['I'] > 100) scores['I'] = 100;
+
+        // イレギュラー処理（テキトー入力判定）
+        // 簡易判定として、すべてのスコアが同じ場合、または全てが極端に低い/高い場合を想定
+        // ここでは仕様書の例にある「全類型100点又は0点」に近い状態として「全てのスコアが同一」をエラーとみなします
+        if (scores.P === scores.A && scores.A === scores.I && scores.I === scores.D) {
+            showErrorResult();
+            return;
+        }
+
+        // 仕様書: 同順位の系統が発生した場合の優先順位はD、P、A、Iの順番
+        const priority = { 'D': 4, 'P': 3, 'A': 2, 'I': 1 };
+        const types = ['P', 'A', 'I', 'D'];
+
+        // ソート処理
+        types.sort((a, b) => {
+            if (scores[b] !== scores[a]) {
+                return scores[b] - scores[a]; // 点数が高い順
+            }
+            return priority[b] - priority[a]; // 同点なら優先順位順
+        });
+
+        // 仕様書[cite: 10, 11]: 1番高いものが基本、2番目が補助
+        const firstType = types[0];
+        const secondType = types[1];
+        const firstScore = scores[firstType];
+        const secondScore = scores[secondType];
+
+        let resultType = "";
+
+        // 仕様書: 基本系統と補助系統との間に20以上の数値差がある場合は純粋類型（例：PP）
+        if ((firstScore - secondScore) >= 20) {
+            resultType = firstType + firstType;
+        } else {
+            resultType = firstType + secondType;
+        }
+
+        // 結果画面の表示
+        document.getElementById('screen-question').classList.add('hidden');
+        document.getElementById('screen-result').style.display = 'block';
+
+        // テキスト埋め込み
+        document.getElementById('result-type').innerText = resultType + "型";
+        
+        // 説明文の取得
+        const desc = resultsDesc[resultType] ? resultsDesc[resultType] : "判定できませんでした。";
+        document.getElementById('result-desc').innerText = desc;
+
+        // ※仕様書[cite: 21]: 各類型の数値は表示しなくてよいので表示しません
+    }
+
+    // エラー時の表示 [cite: 41-45]
+    function showErrorResult() {
+        document.getElementById('screen-question').classList.add('hidden');
+        document.getElementById('screen-result').style.display = 'block';
+
+        const typeDisplay = document.getElementById('result-type');
+        typeDisplay.innerText = "判定不能";
+        typeDisplay.style.fontSize = "32px";
+        typeDisplay.style.color = "#d9534f"; // エラー時の赤色
+        
+        const descDiv = document.getElementById('result-desc');
+        descDiv.innerHTML = 
+            "<strong>あなたの性格類型を分類することができませんでした。</strong><br><br>" +
+            "もしかしたら、あなたは特別な類型なのかもしれません。";
+    }
+
+</script>
+
+</body>
+</html>
